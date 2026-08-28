@@ -94,7 +94,8 @@ function main() {
       if (qs("debug") === "1") {
         show("驗證模式");
         document.getElementById("note").textContent =
-          "userId = " + uid + "｜displayName = " + name;
+          "userId = " + uid + "｜displayName = " + name +
+          "｜host = " + location.hostname;
         return;
       }
       if (!uid) { show("請由 LINE 對話中的連結開啟本頁 🙏"); return; }
