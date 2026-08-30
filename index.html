@@ -79,7 +79,16 @@ function calUrl(slug, uid, name) {
   if (name) q += "&name=" + encodeURIComponent(name);
   return CAL_BASE + "/" + slug + "?" + q;
 }
-function show(msg) { document.getElementById("msg").textContent = msg; }
+function show(msg, note) {
+  document.getElementById("msg").textContent = msg;
+  if (note) document.getElementById("note").textContent = note;
+}
+// 2026-08-30(稽核 A9):載入失敗時客戶原本拿不到任何退路,只被告知「請稍後
+// 再試」。這頁是他唯一的預約入口,失敗就等於斷線。規格
+// docs/booking_build_plan.md:76-77 本來就要求給退路,實作漏了。
+// 「在 LINE 對話中留言」是永遠可用的第二條路 —— 那個對話框就在他手上。
+var FALLBACK = "或直接在 LINE 對話中留言告訴我們您方便的時間，" +
+               "全謹代書團隊會協助您安排 🙏";
 
 function ready(uid, name) {
   document.getElementById("btn-phone").href = calUrl(SLUG_PHONE, uid, name);
@@ -91,11 +100,11 @@ function ready(uid, name) {
 }
 
 function main() {
-  if (!window.liff) { show("載入失敗，請稍後再試 🙏"); return; }
+  if (!window.liff) { show("頁面載入好像出了點狀況 🙏", FALLBACK); return; }
   liff.init({ liffId: LIFF_ID }).then(function () {
     if (!liff.isInClient() && !liff.isLoggedIn()) {
       // 外部瀏覽器且未登入:不無身分放行(身分 join 不可破)
-      show("請由 LINE 對話中的連結開啟本頁 🙏");
+      show("請由 LINE 對話中的連結開啟本頁 🙏", FALLBACK);
       return;
     }
     liff.getProfile().then(function (prof) {
@@ -108,7 +117,7 @@ function main() {
           "｜host = " + location.hostname;
         return;
       }
-      if (!uid) { show("請由 LINE 對話中的連結開啟本頁 🙏"); return; }
+      if (!uid) { show("請由 LINE 對話中的連結開啟本頁 🙏", FALLBACK); return; }
       // 預約閘:已有在途預約 → 引導回 LINE;網路錯 fail-open 放行
       fetch(GATE_BASE + "/booking-gate/" + uid,
             { headers: { "ngrok-skip-browser-warning": "1" } })
@@ -119,9 +128,9 @@ function main() {
           } else { ready(uid, name); }
         })
         .catch(function () { ready(uid, name); });
-    }).catch(function () { show("請由 LINE 對話中的連結開啟本頁 🙏"); });
+    }).catch(function () { show("頁面載入好像出了點狀況 🙏", FALLBACK); });
   }).catch(function () {
-    show("請由 LINE 對話中的連結開啟本頁 🙏");
+    show("頁面載入好像出了點狀況 🙏", FALLBACK);
   });
 }
 main();
